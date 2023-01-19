@@ -10,10 +10,12 @@ def process_review_text(row):
         return 0
     else:
         return int(row[1:-1])
-
-
+#
+# print(df_data.head(5))
+# print(df_data[['id', 'review_text']])
 df_data['review_text'] = df_data['review_text'].apply(process_review_text)
-df_data = df_data.iloc[1:5, :]
+df_data = df_data.iloc[225:, :]
+
 cookies = {'_trackity': 'f42ea536-5842-867f-587e-1a47852be7b4',
            'TOKENS': '{%22access_token%22:%22kax4WoQfzPUY2mhKri1sFbCJVDe0X8w9%22%2C%22expires_in%22:157680000%2C'
                      '%22expires_at%22:1829937876436%2C%22guest_token%22:%22kax4WoQfzPUY2mhKri1sFbCJVDe0X8w9%22}',
@@ -48,27 +50,30 @@ result = []
 for idx, id in enumerate(df_data['id'].values.tolist()):
     params['product_id'] = id
     if df_data[df_data['id'] == id]['review_text'].values[0] >= 5:
-        seller_id = ast.literal_eval(df_data[df_data['id'] == id]['current_seller'].values[0]).get('id')
-        params['seller_id'] = seller_id
-        params['spid'] = id
-        for i in range(df_data[df_data['id'] == id]['review_text'].values[0] // 5):
-            params['page'] = i
-            response = requests.get('https://tiki.vn/api/v2/reviews', headers=header, params=params, cookies=cookies)
-            if response.status_code == 200:
-                if (
-                        response.status_code != 204 and
-                        response.headers["content-type"].strip().startswith("application/json")
-                ):
-                    try:
-                        if len(response.json().get('data')) > 0:
-                            temp = response.json().get('data')[0]
-                            temp['id'] = id
-                            result.append(temp)
-                    except ValueError:
-                        print(idx, id)
-                # decide how to handle a server that's misbehaving to this extent
-            else:
-                print('[WARNING] request failed')
+        try:
+            seller_id = ast.literal_eval(df_data[df_data['id'] == id]['current_seller'].values[0]).get('id')
+            params['seller_id'] = seller_id
+            params['spid'] = id
+            for i in range(df_data[df_data['id'] == id]['review_text'].values[0] // 5):
+                params['page'] = i
+                response = requests.get('https://tiki.vn/api/v2/reviews', headers=header, params=params, cookies=cookies)
+                if response.status_code == 200:
+                    if (
+                            response.status_code != 204 and
+                            response.headers["content-type"].strip().startswith("application/json")
+                    ):
+                        try:
+                            if len(response.json().get('data')) > 0:
+                                temp = response.json().get('data')[0]
+                                temp['id'] = id
+                                result.append(temp)
+                        except ValueError:
+                            print(idx, id)
+                    # decide how to handle a server that's misbehaving to this extent
+                else:
+                    print('[WARNING] request failed')
+        except:
+            print(id, 'error')
     if idx % 5 == 0:
         print(idx)
         df = pd.DataFrame(result)
