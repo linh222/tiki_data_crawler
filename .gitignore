@@ -1,4 +1,6 @@
 .idea/
-data
+tiki/data
 data.json
 venv
+.idea
+shopee/data
